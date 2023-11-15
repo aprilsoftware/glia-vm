@@ -1,5 +1,5 @@
 # Introduction
-Scripts to create and deploy VM images for KVM.
+Scripts to create and deploy VM images for KVM (libvirt).
 The Debian images are equivalent to the ones created using [d-i](https://d-i.debian.org/doc/internals/). Behind the scene, the scripts use [debootstrap](https://wiki.debian.org/Debootstrap).
 
 # Usage
