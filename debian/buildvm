@@ -41,7 +41,7 @@ finish()
       sudo rm -r ${BUILD_PATH}/chroot
   fi
 
-  exit 1
+  exit $1
 }
 
 SHORT=p:,n:,r:,d:,h:,i:,g:,l:,s:,a,b,h
@@ -167,7 +167,7 @@ sudo qemu-nbd --connect=/dev/nbd0 \
               --aio=native \
               ${BUILD_PATH}/${VM_NAME}.img
 
-trap "finish" ERR
+trap "finish 1" ERR
 
 sudo parted /dev/nbd0 mklabel msdos
 
@@ -222,4 +222,4 @@ CHROOT
 
 sudo rm -r ${BUILD_PATH}/chroot/usr/local/glia/build
 
-finish
+finish 0
