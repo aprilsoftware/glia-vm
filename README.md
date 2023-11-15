@@ -4,6 +4,11 @@ The Debian images are equivalent to the ones created using [d-i](https://d-i.deb
 
 # Usage
 ## Build
+
+```
+mkdir -p ~/img
+```
+
 ```
 debian/buildvm --path ~/img \
         --name server1 \
