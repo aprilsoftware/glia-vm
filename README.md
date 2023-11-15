@@ -25,7 +25,7 @@ VM_VCPUS=1
 VM_MEMORY=2048
 VM_NETWORK=br0
 
-../debian/buildvm --path ${BUILD_PATH} \
+debian/buildvm --path ${BUILD_PATH} \
         --name ${VM_NAME} \
         --release ${OS_RELEASE} \
         --domain ${VM_DOMAIN} \
@@ -37,7 +37,7 @@ VM_NETWORK=br0
         --ask-root-password \
         --ask-glia-password
 
-../debian/deployvm --path ${BUILD_PATH} \
+debian/deployvm --path ${BUILD_PATH} \
         --name ${VM_NAME} \
         --host ${KVM_HOST} \
         --destination ${VM_DESTINATION} \
