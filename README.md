@@ -5,11 +5,15 @@ The Debian images are equivalent to the ones created using [d-i](https://d-i.deb
 # Usage
 ## Build
 ```
-debian/buildvm --path ~/halOS/img \
-        --name net0.example \
+mkdir -p ~/img
+```
+
+```
+debian/buildvm --path ~/img \
+        --name server1 \
         --release bookworm \
-        --domain net0.aprilsoftware.com \
-        --hostname example \
+        --domain example.com \
+        --hostname server1 \
         --ip 192.168.0.110 \
         --gateway 192.168.0.1 \
         --nameserver 192.168.0.1 \
@@ -20,8 +24,8 @@ debian/buildvm --path ~/halOS/img \
 
 ## Deploy
 ```
-debian/deployvm --path ~/halOS/img \
-        --name net0.example \
+debian/deployvm --path ~/img \
+        --name server1 \
         --host glia@node1.local \
         --destination /mnt/gv0/vm \
         --vcpus 1 \
