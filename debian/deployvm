@@ -1,0 +1,94 @@
+#!/bin/bash
+set -e
+
+help()
+{
+    echo "Usage: deployvm [ -p | --path ]
+              [ -n | --name ]
+              [ -o | --host ]
+              [ -d | --destination ]
+              [ -v | --vcpus ]
+              [ -m | --memory ]
+              [ -t | --network ]
+              [ -i | --delete-image ]"
+    exit 2
+}
+
+SHORT=p:,n:,o:,d:,v:,m,:,t:,i,h
+LONG=path:,name:,host:,destination:,vcpus:,memory:,network:,delete-image,help
+OPTS=$(getopt --alternative --name buildvm --options $SHORT --longoptions $LONG -- "$@") 
+
+if [ $# -eq 0 ]
+then
+  help
+fi
+
+eval set -- "$OPTS"
+
+while :
+do
+  case "$1" in
+    -p | --path )
+      BUILD_PATH="$2"
+      shift 2
+      ;;
+    -d | --name )
+      VM_NAME="$2"
+      shift 2
+      ;;
+    -o | --host )
+      KVM_HOST="$2"
+      shift 2
+      ;;
+    -d | --destination )
+      VM_DESTINATION="$2"
+      shift 2
+      ;;
+    -v | --vcpus )
+      VM_VCPUS="$2"
+      shift 2
+      ;;
+    -m | --memory )
+      VM_MEMORY="$2"
+      shift 2
+      ;;
+    -t | --network )
+      VM_NETWORK="$2"
+      shift 2
+      ;;
+    -i | --delete-image )
+      DELETE_IMAGE=true
+      shift
+      ;;
+    -h | --help)
+      help
+      ;;
+    --)
+      shift;
+      break
+      ;;
+    *)
+      echo "Unexpected option: $1"
+      help
+      ;;
+  esac
+done
+
+scp ${BUILD_PATH}/${VM_NAME}.img ${KVM_HOST}:${VM_DESTINATION}
+
+virt-install --connect=qemu+ssh://${KVM_HOST}/system \
+        --name ${VM_NAME} \
+        --vcpus ${VM_VCPUS} \
+        --memory ${VM_MEMORY} \
+        --disk path=${VM_DESTINATION}/${VM_NAME}.img,format=qcow2,bus=virtio \
+        --import \
+        --os-variant debian10 \
+        --network network=${VM_NETWORK},model=virtio \
+        --graphics spice \
+        --noautoconsole \
+        --console pty,target_type=serial
+
+if [ "${DELETE_IMAGE}" = true ]
+then
+  sudo rm ${BUILD_PATH}/${VM_NAME}.img
+fi

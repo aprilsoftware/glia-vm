@@ -1,0 +1,214 @@
+#!/bin/bash
+set -e
+
+help()
+{
+    echo "Usage: buildvm [ -p | --path ]
+              [ -n | --name ]
+              [ -r | --release ]
+              [ -d | --domain ]
+              [ -h | --hostname ]
+              [ -i | --ip ]
+              [ -g | --gateway ]
+              [ -l | --nameserver ]
+              [ -s | --size ]
+              [ -a | --ask-root-password ]
+              [ -b | --ask-glia-password ]"
+    exit 2
+}
+
+finish()
+{
+  sudo umount -l ${BUILD_PATH}/chroot/dev
+  sudo umount -l ${BUILD_PATH}/chroot/run
+  sudo umount -l ${BUILD_PATH}/chroot
+
+  sudo qemu-nbd --disconnect /dev/nbd0
+
+  if [ -d "${BUILD_PATH}/chroot" ]
+  then
+      sudo rm -r ${BUILD_PATH}/chroot
+  fi
+
+  exit 1
+}
+
+SHORT=p:,n:,r:,d:,h:,i:,g:,l:,s:,a,b,h
+LONG=path:,name:,release:,domain:,hostname:,ip:,gateway:,nameserver:,size:,ask-root-password,ask-glia-password,help
+OPTS=$(getopt --alternative --name buildvm --options $SHORT --longoptions $LONG -- "$@") 
+
+if [ $# -eq 0 ]
+then
+  help
+fi
+
+eval set -- "$OPTS"
+
+while :
+do
+  case "$1" in
+    -p | --path )
+      BUILD_PATH="$2"
+      shift 2
+      ;;
+    -d | --name )
+      VM_NAME="$2"
+      shift 2
+      ;;
+    -r | --release )
+      OS_RELEASE="$2"
+      shift 2
+      ;;
+    -d | --domain )
+      VM_DOMAIN="$2"
+      shift 2
+      ;;
+    -h | --hostname )
+      VM_HOSTNAME="$2"
+      shift 2
+      ;;
+    -i | --ip )
+      VM_IP="$2"
+      shift 2
+      ;;
+    -g | --gateway )
+      VM_GATEWAY="$2"
+      shift 2
+      ;;
+    -l | --nameserver )
+      VM_NAMESERVER="$2"
+      shift 2
+      ;;
+    -s | --size )
+      VM_SIZE="$2"
+      shift 2
+      ;;
+    -a | --ask-root-password)
+      echo -n "ROOT Password: "
+      read -s ROOT_PASSWORD
+      echo
+
+      if [ -z "${ROOT_PASSWORD}" ]
+      then
+        echo "Invalid password"
+
+        exit 2
+      fi
+
+      shift
+      ;;
+    -b | --ask-glia-password)
+      echo -n "Glia Password: "
+      read -s GLIA_PASSWORD
+      echo
+
+      if [ -z "${GLIA_PASSWORD}" ]
+      then
+        echo "Invalid password"
+
+        exit 2
+      fi
+
+      shift
+      ;;
+    -h | --help)
+      help
+      ;;
+    --)
+      shift;
+      break
+      ;;
+    *)
+      echo "Unexpected option: $1"
+      help
+      ;;
+  esac
+done
+
+
+SCRIPT_DIRECTORY=$(dirname -- $0)
+
+if [ ! -f "${SCRIPT_DIRECTORY}/images/${OS_RELEASE}.sh" ]
+then
+    echo "Unsupported release"
+
+    exit 2
+fi
+
+if [ -f "${BUILD_PATH}/${VM_NAME}.img" ]
+then
+    sudo rm ${BUILD_PATH}/${VM_NAME}.img
+fi
+
+if [ -d "${BUILD_PATH}/chroot" ]
+then
+    sudo rm -r ${BUILD_PATH}/chroot
+fi
+
+sudo qemu-img create -f qcow2 ${BUILD_PATH}/${VM_NAME}.img 10G
+
+sudo modprobe nbd max_part=8
+
+sudo qemu-nbd --connect=/dev/nbd0 \
+              --format=qcow2 \
+              --cache=none \
+              --detect-zeroes=on \
+              --aio=native \
+              ${BUILD_PATH}/${VM_NAME}.img
+
+trap "finish" ERR
+
+sudo parted /dev/nbd0 mklabel msdos
+
+sudo parted /dev/nbd0 mkpart primary 0% 100%
+
+sudo mkfs.ext4 /dev/nbd0p1
+
+mkdir ${BUILD_PATH}/chroot
+
+sudo mount /dev/nbd0p1 ${BUILD_PATH}/chroot
+
+sudo mkdir ${BUILD_PATH}/chroot/boot
+
+
+if [ -f "${BUILD_PATH}/${OS_RELEASE}.tar.gz" ]; then
+    sudo bash -c "cd ${BUILD_PATH}/chroot && tar xzf ${BUILD_PATH}/${OS_RELEASE}.tar.gz"
+else
+    sudo debootstrap --arch amd64 ${OS_RELEASE} ${BUILD_PATH}/chroot https://deb.debian.org/debian
+
+    sudo bash -c "cd ${BUILD_PATH}/chroot && tar czf ${BUILD_PATH}/${OS_RELEASE}.tar.gz ."
+fi
+
+
+sudo mount --bind /dev ${BUILD_PATH}/chroot/dev
+sudo mount --bind /run ${BUILD_PATH}/chroot/run
+
+sudo mkdir -p ${BUILD_PATH}/chroot/usr/local/glia/build
+
+sudo cp -r ${SCRIPT_DIRECTORY}/images/lib ${BUILD_PATH}/chroot/usr/local/glia/build
+sudo cp ${SCRIPT_DIRECTORY}/images/${OS_RELEASE}.sh ${BUILD_PATH}/chroot/usr/local/glia/build
+
+if [ ! -z "${ROOT_PASSWORD}" ]
+then
+  OPT_PARAM_1="--root-password=${ROOT_PASSWORD}"
+fi
+
+if [ ! -z "${GLIA_PASSWORD}" ]
+then
+  OPT_PARAM_2="--glia-password=${GLIA_PASSWORD}"
+fi
+
+sudo chroot ${BUILD_PATH}/chroot /bin/bash << CHROOT
+/usr/local/glia/build/${OS_RELEASE}.sh \
+        --domain ${VM_DOMAIN} \
+        --hostname ${VM_HOSTNAME} \
+        --ip ${VM_IP} \
+        --gateway ${VM_GATEWAY} \
+        --nameserver ${VM_NAMESERVER} \
+        ${OPT_PARAM_1} \
+        ${OPT_PARAM_2}
+CHROOT
+
+sudo rm -r ${BUILD_PATH}/chroot/usr/local/glia/build
+
+finish

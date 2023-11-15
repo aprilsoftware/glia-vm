@@ -1,0 +1,1 @@
+echo ${VM_HOSTNAME} > /etc/hostname
