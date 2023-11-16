@@ -14,7 +14,7 @@ set -e
 
 LIB_PATH=$(dirname -- $0)/lib
 
-source ${LIB_PATH}/args.shq
+source ${LIB_PATH}/args.sh
 
 source ${LIB_PATH}/init.sh
 
