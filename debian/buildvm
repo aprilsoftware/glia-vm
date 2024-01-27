@@ -151,7 +151,7 @@ then
     sudo rm -r ${BUILD_PATH}/chroot
 fi
 
-sudo qemu-img create -f qcow2 ${BUILD_PATH}/${VM_NAME}.img 10G
+sudo qemu-img create -f qcow2 ${BUILD_PATH}/${VM_NAME}.img $VM_SIZE
 
 sudo modprobe nbd max_part=8
 
