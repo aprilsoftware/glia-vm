@@ -49,3 +49,5 @@ then
 else
     echo "glia:${GLIA_PASSWORD}" | chpasswd
 fi
+
+echo "glia ALL=(ALL) NOPASSWD: ALL"  >> /etc/sudoers.d/010_glia-nopasswd
