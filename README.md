@@ -20,7 +20,8 @@ debian/buildvm --path ~/img \
         --nameserver 192.168.0.1 \
         --size 10G \
         --ask-root-password \
-        --ask-glia-password
+        --ask-glia-password \
+        --modules kubernetes/install_1.29
 ```
 
 ## Deploy

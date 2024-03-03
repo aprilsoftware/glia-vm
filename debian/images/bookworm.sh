@@ -37,4 +37,6 @@ source ${LIB_PATH}/network/loopback.sh
 source ${LIB_PATH}/network/static-ip.sh
 source ${LIB_PATH}/network/resolv.sh
 
+source ${LIB_PATH}/modules.sh
+
 source ${LIB_PATH}/finish.sh

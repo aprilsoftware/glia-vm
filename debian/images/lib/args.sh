@@ -11,14 +11,16 @@ help()
               [ -h | --hostname ]
               [ -i | --ip ]
               [ -g | --gateway ]
-			        [ -l | --nameserver ]
+              [ -l | --nameserver ]
               [ -a | --root-password ]
-              [ -b | --glia-password ]"
+              [ -b | --glia-password ]
+              [ -m ] --modules ]
+              [ -h | --help ]"
     exit 2
 }
 
-SHORT=d:,h:,i:,g:,n:,a::,b::,h
-LONG=domain:,hostname:,ip:,gateway:,nameserver:,root-password::,glia-password::,help
+SHORT=d:,h:,i:,g:,n:,a::,b::,m::,h
+LONG=domain:,hostname:,ip:,gateway:,nameserver:,root-password::,glia-password::,modules::,help
 OPTS=$(getopt --alternative --name chroot.sh --options $SHORT --longoptions $LONG -- "$@") 
 
 if [ $# -eq 0 ]; then
@@ -56,6 +58,10 @@ do
       ;;
     -b | --glia-password )
       GLIA_PASSWORD="$2"
+      shift 2
+      ;;
+    -m | --modules )
+      MODULES="$2"
       shift 2
       ;;
     -h | --help)
