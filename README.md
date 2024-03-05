@@ -3,6 +3,12 @@ Scripts to create and deploy VM images for [QEMU](https://www.qemu.org/) / [KVM]
 The Debian images are equivalent to the ones created using [d-i](https://d-i.debian.org/doc/internals/). Behind the scene, the scripts use [debootstrap](https://wiki.debian.org/Debootstrap).
 
 # Usage
+## Dependencies
+
+```
+sudo apt install qemu-utils parted debootstrap packagekit
+```
+
 ## Build
 
 ```
