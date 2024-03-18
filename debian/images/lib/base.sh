@@ -11,6 +11,8 @@ apt-get upgrade -y
 
 apt-get install openssh-server -y
 
+apt-get install python3 -y
+
 apt-get install sudo -y
 
 apt-get install locales -y
