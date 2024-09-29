@@ -6,7 +6,7 @@
 # See the LICENSE file in the top-level directory.
 #
 
-KUBERNETES_VERSION=v1.29
-PROJECT_PATH=stable:/v1.29
+KUBERNETES_VERSION=v1.31
+PROJECT_PATH=stable:/v1.31
 
 source ${LIB_PATH}/modules/kubernetes/install.sh
