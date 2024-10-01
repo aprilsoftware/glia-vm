@@ -15,6 +15,8 @@ apt-get install python3 -y
 
 apt-get install sudo -y
 
+apt-get install ntp -y
+
 apt-get install locales -y
 
 sed '/en_GB.UTF-8 UTF-8/s/^# //' -i /etc/locale.gen
