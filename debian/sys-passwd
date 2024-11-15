@@ -1,0 +1,137 @@
+#!/bin/bash
+#
+# Copyright (C) 2024 April Software S.A.
+#
+# This work is licensed under the GNU GPLv3 or later.
+# See the LICENSE file in the top-level directory.
+#
+set -e
+
+help() {
+    echo "Usage: $0 [-f host_file] [host1 host2 ...]"
+    echo
+    echo "Options:"
+    echo "  -f FILE    Provide a file containing a list of hosts (one per line)."
+    echo "  -h         Display this help message."
+    echo
+    echo "If -f is not used, provide hosts as command-line arguments."
+    exit 1
+}
+
+while getopts ":f:h" opt; do
+    case ${opt} in
+        f )
+            host_file="$OPTARG"
+            ;;
+        h )
+            help
+            ;;
+        \? )
+            echo "Invalid Option: -$OPTARG" >&2
+            help
+            ;;
+        : )
+            echo "Invalid Option: -$OPTARG requires an argument" >&2
+            help
+            ;;
+    esac
+done
+shift $((OPTIND -1))
+
+read_file() {
+    local file="$1"
+    if [[ ! -f "$file" ]]; then
+        echo "Error: File '$file' does not exist." >&2
+        exit 1
+    fi
+    mapfile -t hosts < "$file"
+}
+
+read_args() {
+    if [[ $# -lt 1 ]]; then
+        echo "Error: No hosts provided." >&2
+        help
+    fi
+    hosts=("$@")
+}
+
+if [[ -n "$host_file" ]]; then
+    read_file "$host_file"
+else
+    read_args "$@"
+fi
+
+if [[ ${#hosts[@]} -eq 0 ]]; then
+    echo "Error: Host list is empty." >&2
+    help
+fi
+
+USER=glia
+
+read -s -p "Enter new password for user '$USER': " USER_PASSWORD
+echo
+
+read -s -p "Enter new password for 'root': " ROOT_PASSWORD
+echo
+
+copy_ssh_key() {
+    local host="$1"
+    local attempts=0
+    local max_attempts=3
+
+    echo "----------------------------------------"
+    echo "Setting up SSH key for $host"
+
+    if [[ ! -f ~/.ssh/id_rsa.pub ]]; then
+        echo "SSH public key not found. Generating one..."
+        ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
+    fi
+
+    while [[ $attempts -lt $max_attempts ]]; do
+        ssh-copy-id -i ~/.ssh/id_rsa.pub "${USER}@${host}"
+        if [[ $? -eq 0 ]]; then
+            echo "Successfully set up SSH key for $host."
+            return 0
+        else
+            attempts=$((attempts + 1))
+            echo "Failed to copy SSH key to $host. Attempt $attempts of $max_attempts."
+            sleep 2
+        fi
+    done
+
+    echo "Error: Unable to copy SSH key to $host after $max_attempts attempts." >&2
+    return 1
+}
+
+change_passwords() {
+    local host="$1"
+    echo "----------------------------------------"
+    echo "Changing passwords on $host"
+
+    ssh "${USER}@${host}" "echo '$USER:$USER_PASSWORD' | sudo chpasswd" 2>/dev/null
+    if [[ $? -ne 0 ]]; then
+        echo "Failed to change password for user '$USER' on $host." >&2
+        return
+    else
+        echo "Successfully changed password for user '$USER' on $host."
+    fi
+
+    ssh "${USER}@${host}" "echo 'root:$ROOT_PASSWORD' | sudo chpasswd" 2>/dev/null
+    if [[ $? -ne 0 ]]; then
+        echo "Failed to change password for 'root' on $host." >&2
+    else
+        echo "Successfully changed password for 'root' on $host."
+    fi
+}
+
+echo "Starting SSH key setup on all hosts..."
+for host in "${hosts[@]}"; do
+    copy_ssh_key "$host"
+done
+
+for host in "${hosts[@]}"; do
+    change_passwords "$host"
+done
+
+echo "----------------------------------------"
+echo "Password update process completed."
