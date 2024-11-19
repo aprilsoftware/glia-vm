@@ -88,7 +88,7 @@ virt-install --connect=qemu+ssh://${KVM_HOST}/system \
         --memory ${VM_MEMORY} \
         --disk path=${VM_DESTINATION}/${VM_NAME}.img,format=qcow2,bus=virtio \
         --import \
-        --os-variant debian10 \
+        --os-variant debian11 \
         --network network=${VM_NETWORK},model=virtio \
         --graphics spice \
         --noautoconsole \
