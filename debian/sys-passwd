@@ -8,22 +8,22 @@
 set -e
 
 help() {
-    echo "Usage: $0 [-f host_file] [host1 host2 ...]"
+    echo "Usage: $0 [-F HOST_FILE] [HOST1 HOST2 ...]"
     echo
     echo "Options:"
-    echo "  -f FILE    Provide a file containing a list of hosts (one per line)."
-    echo "  -h         Display this help message."
+    echo "  -F FILE    Provide a file containing a list of hosts (one per line)."
+    echo "  -H         Display this help message."
     echo
-    echo "If -f is not used, provide hosts as command-line arguments."
+    echo "If -F is not used, provide hosts as command-line arguments."
     exit 1
 }
 
-while getopts ":f:h" opt; do
-    case ${opt} in
-        f )
-            host_file="$OPTARG"
+while getopts ":F:H" OPT; do
+    case ${OPT} in
+        F )
+            HOST_FILE="$OPTARG"
             ;;
-        h )
+        H )
             help
             ;;
         \? )
@@ -39,12 +39,12 @@ done
 shift $((OPTIND -1))
 
 read_file() {
-    local file="$1"
-    if [[ ! -f "$file" ]]; then
-        echo "Error: File '$file' does not exist." >&2
+    local FILE="$1"
+    if [[ ! -f "$FILE" ]]; then
+        echo "Error: File '$FILE' does not exist." >&2
         exit 1
     fi
-    mapfile -t hosts < "$file"
+    mapfile -t HOSTS < "$FILE"
 }
 
 read_args() {
@@ -52,16 +52,16 @@ read_args() {
         echo "Error: No hosts provided." >&2
         help
     fi
-    hosts=("$@")
+    HOSTS=("$@")
 }
 
-if [[ -n "$host_file" ]]; then
-    read_file "$host_file"
+if [[ -n "$HOST_FILE" ]]; then
+    read_file "$HOST_FILE"
 else
     read_args "$@"
 fi
 
-if [[ ${#hosts[@]} -eq 0 ]]; then
+if [[ ${#HOSTS[@]} -eq 0 ]]; then
     echo "Error: Host list is empty." >&2
     help
 fi
@@ -75,62 +75,54 @@ read -s -p "Enter new password for 'root': " ROOT_PASSWORD
 echo
 
 copy_ssh_key() {
-    local host="$1"
-    local attempts=0
-    local max_attempts=3
+    local HOST="$1"
 
     echo "----------------------------------------"
-    echo "Setting up SSH key for $host"
+    echo "Setting up SSH key for $HOST"
 
     if [[ ! -f ~/.ssh/id_rsa.pub ]]; then
         echo "SSH public key not found. Generating one..."
         ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
     fi
 
-    while [[ $attempts -lt $max_attempts ]]; do
-        ssh-copy-id -i ~/.ssh/id_rsa.pub "${USER}@${host}"
-        if [[ $? -eq 0 ]]; then
-            echo "Successfully set up SSH key for $host."
-            return 0
-        else
-            attempts=$((attempts + 1))
-            echo "Failed to copy SSH key to $host. Attempt $attempts of $max_attempts."
-            sleep 2
-        fi
-    done
-
-    echo "Error: Unable to copy SSH key to $host after $max_attempts attempts." >&2
-    return 1
+    ssh-copy-id -i ~/.ssh/id_rsa.pub "${USER}@${HOST}"
+    if [[ $? -eq 0 ]]; then
+        echo "Successfully set up SSH key for $HOST."
+        return 0
+    else
+        echo "Error: Unable to copy SSH key to $HOST."
+        return 1
+    fi
 }
 
 change_passwords() {
-    local host="$1"
+    local HOST="$1"
     echo "----------------------------------------"
-    echo "Changing passwords on $host"
+    echo "Changing passwords on $HOST"
 
-    ssh "${USER}@${host}" "echo '$USER:$USER_PASSWORD' | sudo chpasswd" 2>/dev/null
+    ssh "${USER}@${HOST}" "echo '$USER:$USER_PASSWORD' | sudo chpasswd" 2>/dev/null
     if [[ $? -ne 0 ]]; then
-        echo "Failed to change password for user '$USER' on $host." >&2
+        echo "Failed to change password for user '$USER' on $HOST." >&2
         return
     else
-        echo "Successfully changed password for user '$USER' on $host."
+        echo "Successfully changed password for user '$USER' on $HOST."
     fi
 
-    ssh "${USER}@${host}" "echo 'root:$ROOT_PASSWORD' | sudo chpasswd" 2>/dev/null
+    ssh "${USER}@${HOST}" "echo 'root:$ROOT_PASSWORD' | sudo chpasswd" 2>/dev/null
     if [[ $? -ne 0 ]]; then
-        echo "Failed to change password for 'root' on $host." >&2
+        echo "Failed to change password for 'root' on $HOST." >&2
     else
-        echo "Successfully changed password for 'root' on $host."
+        echo "Successfully changed password for 'root' on $HOST."
     fi
 }
 
 echo "Starting SSH key setup on all hosts..."
-for host in "${hosts[@]}"; do
-    copy_ssh_key "$host"
+for HOST in "${HOSTS[@]}"; do
+    copy_ssh_key "$HOST"
 done
 
-for host in "${hosts[@]}"; do
-    change_passwords "$host"
+for HOST in "${HOSTS[@]}"; do
+    change_passwords "$HOST"
 done
 
 echo "----------------------------------------"

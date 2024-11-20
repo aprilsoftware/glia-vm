@@ -22,7 +22,7 @@ deploy()
     $1/deployvm --path ${BUILD_PATH} \
             --name ${VM_NAME} \
             --host ${KVM_HOST} \
-            --destination ${VM_DESTINATION} \
+            --pool ${VM_POOL} \
             --vcpus ${VM_VCPUS} \
             --memory ${VM_MEMORY} \
             --network ${VM_NETWORK} \

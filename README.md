@@ -25,9 +25,10 @@ debian/buildvm --path ~/img \
         --gateway 192.168.0.1 \
         --nameserver 192.168.0.1 \
         --size 10G \
+        --disk-format qcow2 \
         --ask-root-password \
         --ask-glia-password \
-        --modules kubernetes/install_1.29
+        --modules kubernetes/install_1.31
 ```
 
 ## Deploy
@@ -35,7 +36,7 @@ debian/buildvm --path ~/img \
 debian/deployvm --path ~/img \
         --name server1 \
         --host glia@node1.local \
-        --destination /mnt/gv0/vm \
+        --pool vm \
         --vcpus 1 \
         --memory 2048 \
         --network br0 \

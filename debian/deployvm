@@ -12,7 +12,7 @@ help()
     echo "Usage: deployvm [ -p | --path ]
               [ -n | --name ]
               [ -o | --host ]
-              [ -d | --destination ]
+              [ -d | --pool ]
               [ -v | --vcpus ]
               [ -m | --memory ]
               [ -t | --network ]
@@ -21,7 +21,7 @@ help()
 }
 
 SHORT=p:,n:,o:,d:,v:,m,:,t:,i,h
-LONG=path:,name:,host:,destination:,vcpus:,memory:,network:,delete-image,help
+LONG=path:,name:,host:,pool:,vcpus:,memory:,network:,delete-image,help
 OPTS=$(getopt --alternative --name buildvm --options $SHORT --longoptions $LONG -- "$@") 
 
 if [ $# -eq 0 ]
@@ -38,7 +38,7 @@ do
       BUILD_PATH="$2"
       shift 2
       ;;
-    -d | --name )
+    -n | --name )
       VM_NAME="$2"
       shift 2
       ;;
@@ -46,8 +46,8 @@ do
       KVM_HOST="$2"
       shift 2
       ;;
-    -d | --destination )
-      VM_DESTINATION="$2"
+    -d | --pool )
+      VM_POOL="$2"
       shift 2
       ;;
     -v | --vcpus )
@@ -80,13 +80,29 @@ do
   esac
 done
 
-scp ${BUILD_PATH}/${VM_NAME}.img ${KVM_HOST}:${VM_DESTINATION}
+POOL_XML=$(virsh --connect qemu+ssh://${KVM_HOST}/system pool-dumpxml "${VM_POOL}")
+
+POOL_TYPE=$(echo "${POOL_XML}" | xmllint --xpath "string(/pool/@type)" -)
+
+if [ "$POOL_TYPE" == "dir" ]; then
+    POOL_PATH=$(echo "$POOL_XML" | xmllint --xpath "string(/pool/target/path)" -)
+    scp ${BUILD_PATH}/${VM_NAME}.img ${KVM_HOST}:${POOL_PATH}
+    VOLUME=${VM_POOL}/${VM_NAME}.img
+elif [ "$POOL_TYPE" == "rbd" ]; then
+    rbd --id libvirt import ${BUILD_PATH}/${VM_NAME}.img ${VM_POOL}/${VM_NAME}
+    VOLUME=${VM_POOL}/${VM_NAME}
+else
+    echo "Error: Unsupported pool type '$POOL_TYPE'."
+    exit 1
+fi
+
+virsh --connect qemu+ssh://${KVM_HOST}/system pool-refresh ${VM_POOL}
 
 virt-install --connect=qemu+ssh://${KVM_HOST}/system \
         --name ${VM_NAME} \
         --vcpus ${VM_VCPUS} \
         --memory ${VM_MEMORY} \
-        --disk path=${VM_DESTINATION}/${VM_NAME}.img,format=qcow2,bus=virtio \
+        --disk "vol=${VOLUME}" \
         --import \
         --os-variant debian11 \
         --network network=${VM_NETWORK},model=virtio \
