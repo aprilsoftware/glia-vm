@@ -11,19 +11,19 @@ help() {
     echo "Usage: $0 [-F HOST_FILE] [HOST1 HOST2 ...]"
     echo
     echo "Options:"
-    echo "  -F FILE    Provide a file containing a list of hosts (one per line)."
-    echo "  -H         Display this help message."
+    echo "  -f file    Provide a file containing a list of hosts (one per line)."
+    echo "  -h         Display this help message."
     echo
-    echo "If -F is not used, provide hosts as command-line arguments."
+    echo "If -f is not used, provide hosts as command-line arguments."
     exit 1
 }
 
-while getopts ":F:H" OPT; do
+while getopts ":f:h" OPT; do
     case ${OPT} in
-        F )
+        f )
             HOST_FILE="$OPTARG"
             ;;
-        H )
+        h )
             help
             ;;
         \? )
