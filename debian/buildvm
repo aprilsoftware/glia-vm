@@ -42,8 +42,8 @@ finish()
   exit $1
 }
 
-SHORT=p:,n:,r:,d:,o:,i:,g:,l:,s:,f:,a,b,m:,h
-LONG=path:,name:,release:,domain:,hostname:,ip:,gateway:,nameserver:,size:,disk-format:,ask-root-password,ask-glia-password,modules:,help
+SHORT=p:,n:,r:,d:,o:,i:,g:,l:,s:,f:,a,b,m::,h
+LONG=path:,name:,release:,domain:,hostname:,ip:,gateway:,nameserver:,size:,disk-format:,ask-root-password,ask-glia-password,modules::,help
 OPTS=$(getopt --alternative --name buildvm --options $SHORT --longoptions $LONG -- "$@") 
 
 if [ $# -eq 0 ]
@@ -142,14 +142,27 @@ do
   esac
 done
 
-
 SCRIPT_DIRECTORY=$(dirname -- $0)
 
 if [ ! -f "${SCRIPT_DIRECTORY}/images/${OS_RELEASE}.sh" ]
 then
     echo "Unsupported release"
 
-    exit 2
+    exit 1
+fi
+
+if [ ! -z "${MODULES}" ]
+then
+  for MODULE in $(echo "${MODULES}" | grep -o -e '[^[:space:]][^[:space:]]*'); do
+      FILE="${SCRIPT_DIRECTORY}/images/lib/modules/${MODULE}.sh"
+
+      if [ ! -f "$FILE" ]; then
+          echo "Module '${MODULE}' not found" >&2
+          exit 1
+      fi
+  done
+
+  OPT_PARAM_3="--modules=\"${MODULES}\""
 fi
 
 if [ -f "${BUILD_PATH}/${VM_NAME}.img" ]
@@ -220,11 +233,6 @@ fi
 if [ ! -z "${GLIA_PASSWORD}" ]
 then
   OPT_PARAM_2="--glia-password=${GLIA_PASSWORD}"
-fi
-
-if [ ! -z "${MODULES}" ]
-then
-  OPT_PARAM_3="--modules=${MODULES}"
 fi
 
 sudo chroot ${BUILD_PATH}/chroot /bin/bash << CHROOT

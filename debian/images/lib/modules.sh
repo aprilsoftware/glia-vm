@@ -8,7 +8,7 @@
 
 if [ ! -z "${MODULES}" ]
 then
-  for MODULE in `echo "${MODULES}" | grep -o -e "[^,]*"`; do
+  for MODULE in $(echo "${MODULES}" | grep -o -e '[^[:space:]][^[:space:]]*'); do
       source ${LIB_PATH}/modules/${MODULE}.sh
   done
 fi
