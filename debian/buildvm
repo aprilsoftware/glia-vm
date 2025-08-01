@@ -21,7 +21,8 @@ help()
               [ -f | --disk-format ]
               [ -a | --ask-root-password ]
               [ -b | --ask-glia-password ]
-              [ -m | --modules ]
+              [ -p | --packages ]
+              [ -u | --users ]
               [ -h | --help]"
     exit 2
 }
@@ -39,11 +40,13 @@ finish()
       sudo rm -r ${BUILD_PATH}/chroot
   fi
 
+  unset ROOT_PASSWORD GLIA_PASSWORD
+
   exit $1
 }
 
-SHORT=p:,n:,r:,d:,o:,i:,g:,l:,s:,f:,a,b,m::,h
-LONG=path:,name:,release:,domain:,hostname:,ip:,gateway:,nameserver:,size:,disk-format:,ask-root-password,ask-glia-password,modules::,help
+SHORT=p:,n:,r:,d:,o:,i:,g:,l:,s:,f:,a,b,p::,u::,h
+LONG=path:,name:,release:,domain:,hostname:,ip:,gateway:,nameserver:,size:,disk-format:,ask-root-password,ask-glia-password,packages::,users::,help
 OPTS=$(getopt --alternative --name buildvm --options $SHORT --longoptions $LONG -- "$@") 
 
 if [ $# -eq 0 ]
@@ -124,8 +127,12 @@ do
 
       shift
       ;;
-    -m | --modules )
-      MODULES="$2"
+    -m | --packages )
+      PACKAGES="$2"
+      shift 2
+      ;;
+    -u | --users )
+      USERS="$2"
       shift 2
       ;;
     -h | --help)
@@ -151,18 +158,18 @@ then
     exit 1
 fi
 
-if [ ! -z "${MODULES}" ]
+if [ ! -z "${PACKAGES}" ]
 then
-  for MODULE in $(echo "${MODULES}" | grep -o -e '[^[:space:]][^[:space:]]*'); do
-      FILE="${SCRIPT_DIRECTORY}/images/lib/modules/${MODULE}.sh"
+  for PACKAGE in $(echo "${PACKAGES}" | grep -o -e '[^[:space:]][^[:space:]]*'); do
+      FILE="${SCRIPT_DIRECTORY}/images/lib/packages/${PACKAGE}.sh"
 
       if [ ! -f "$FILE" ]; then
-          echo "Module '${MODULE}' not found" >&2
+          echo "Package '${PACKAGE}' not found" >&2
           exit 1
       fi
   done
 
-  OPT_PARAM_3="--modules=\"${MODULES}\""
+  OPT_PARAM_3="--packages=\"${PACKAGES}\""
 fi
 
 if [ -f "${BUILD_PATH}/${VM_NAME}.img" ]
@@ -207,7 +214,6 @@ sudo mount /dev/nbd0p1 ${BUILD_PATH}/chroot
 
 sudo mkdir ${BUILD_PATH}/chroot/boot
 
-
 if [ -f "${BUILD_PATH}/${OS_RELEASE}.tar.gz" ]; then
     sudo bash -c "cd ${BUILD_PATH}/chroot && tar xzf ${BUILD_PATH}/${OS_RELEASE}.tar.gz"
 else
@@ -215,7 +221,6 @@ else
 
     sudo bash -c "cd ${BUILD_PATH}/chroot && tar czf ${BUILD_PATH}/${OS_RELEASE}.tar.gz ."
 fi
-
 
 sudo mount --bind /dev ${BUILD_PATH}/chroot/dev
 sudo mount --bind /run ${BUILD_PATH}/chroot/run
@@ -235,6 +240,11 @@ then
   OPT_PARAM_2="--glia-password=${GLIA_PASSWORD}"
 fi
 
+if [ ! -z "${USERS}" ]
+then
+  OPT_PARAM_4="--users=\"${USERS}\""
+fi
+
 sudo chroot ${BUILD_PATH}/chroot /bin/bash << CHROOT
 /usr/local/glia/build/${OS_RELEASE}.sh \
         --domain ${VM_DOMAIN} \
@@ -244,7 +254,8 @@ sudo chroot ${BUILD_PATH}/chroot /bin/bash << CHROOT
         --nameserver ${VM_NAMESERVER} \
         ${OPT_PARAM_1} \
         ${OPT_PARAM_2} \
-        ${OPT_PARAM_3}
+        ${OPT_PARAM_3} \
+        ${OPT_PARAM_4}
 CHROOT
 
 sudo rm -r ${BUILD_PATH}/chroot/usr/local/glia/build

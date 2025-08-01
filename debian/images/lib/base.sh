@@ -5,19 +5,22 @@
 # This work is licensed under the GNU GPLv3 or later.
 # See the LICENSE file in the top-level directory.
 #
-apt-get update
 
-apt-get upgrade -y
+export DEBIAN_FRONTEND=noninteractive
 
-apt-get install openssh-server -y
+apt update
 
-apt-get install python3 -y
+apt upgrade -y
 
-apt-get install sudo -y
+apt install openssh-server -y
 
-apt-get install ntp -y
+apt install python3 -y
 
-apt-get install locales -y
+apt install sudo -y
+
+apt install ntp -y
+
+apt install locales -y
 
 sed '/en_GB.UTF-8 UTF-8/s/^# //' -i /etc/locale.gen
 

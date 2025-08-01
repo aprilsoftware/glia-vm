@@ -7,7 +7,7 @@
 #
 truncate -s 0 /etc/machine-id
 
-apt-get autoclean
+apt autoclean
 
 rm -rf /tmp/* ~/.bash_history
 

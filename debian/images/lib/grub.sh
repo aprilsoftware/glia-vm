@@ -5,7 +5,7 @@
 # This work is licensed under the GNU GPLv3 or later.
 # See the LICENSE file in the top-level directory.
 #
-apt-get install grub2 -y
+apt install grub2 -y
 
 grub-install /dev/nbd0
 

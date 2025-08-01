@@ -6,9 +6,9 @@
 # See the LICENSE file in the top-level directory.
 #
 
-if [ ! -z "${MODULES}" ]
+if [ ! -z "${PACKAGES}" ]
 then
-  for MODULE in $(echo "${MODULES}" | grep -o -e '[^[:space:]][^[:space:]]*'); do
-      source ${LIB_PATH}/modules/${MODULE}.sh
+  for PACKAGE in $(echo "${PACKAGES}" | grep -o -e '[^[:space:]][^[:space:]]*'); do
+      source ${LIB_PATH}/packages/${PACKAGE}.sh
   done
 fi

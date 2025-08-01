@@ -26,7 +26,7 @@ EOF
 
 source ${LIB_PATH}/base.sh
 
-apt-get install linux-image-amd64 firmware-linux -y
+apt install linux-image-amd64 firmware-linux -y
 
 source ${LIB_PATH}/fstab.sh
 source ${LIB_PATH}/grub.sh
@@ -37,6 +37,8 @@ source ${LIB_PATH}/network/loopback.sh
 source ${LIB_PATH}/network/static-ip.sh
 source ${LIB_PATH}/network/resolv.sh
 
-source ${LIB_PATH}/modules.sh
+source ${LIB_PATH}/packages.sh
+
+source ${LIB_PATH}/users.sh
 
 source ${LIB_PATH}/finish.sh

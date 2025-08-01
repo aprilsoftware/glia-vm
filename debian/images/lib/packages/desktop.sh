@@ -6,7 +6,7 @@
 # See the LICENSE file in the top-level directory.
 #
 
-DEBIAN_FRONTEND=noninteractive apt -y install gnome-core
+apt -y install gnome-core
 
 apt -y install xrdp
 
@@ -23,5 +23,5 @@ ResultInactive=yes
 ResultActive=yes
 EOF
 
-sed -i 's/^max_bpp=24/max_bpp=16/' /etc/xrdp/xrdp.ini
-sed -i 's/^xserverbpp=24/xserverbpp=16/' /etc/xrdp/xrdp.ini
+sed -i 's/^max_bpp=32/max_bpp=16/' /etc/xrdp/xrdp.ini
+sed -i 's/^#xserverbpp=24/xserverbpp=16/' /etc/xrdp/xrdp.ini

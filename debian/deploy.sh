@@ -17,7 +17,7 @@ deploy()
             --gateway ${VM_GATEWAY} \
             --nameserver ${VM_NAMESERVER} \
             --size ${VM_SIZE} \
-            --modules ${MODULES}
+            --packages ${PACKAGES}
 
     $1/deployvm --path ${BUILD_PATH} \
             --name ${VM_NAME} \

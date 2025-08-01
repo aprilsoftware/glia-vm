@@ -9,6 +9,6 @@
 KUBERNETES_VERSION=v1.31
 PROJECT_PATH=stable:/v1.31
 
-source ${LIB_PATH}/modules/kubernetes/install.sh
+source ${LIB_PATH}/packages/kubernetes/install.sh
 
-apt-get -y install socat
+apt -y install socat
