@@ -28,7 +28,8 @@ debian/buildvm --path ~/img \
         --disk-format qcow2 \
         --ask-root-password \
         --ask-glia-password \
-        --packages="kubernetes/1.32 desktop"
+        --packages="kubernetes/1.32 desktop" \
+        --users="me"
 ```
 
 ## Deploy
