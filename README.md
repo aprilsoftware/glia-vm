@@ -18,7 +18,7 @@ mkdir -p ~/img
 ```
 debian/buildvm --path ~/img \
         --name server1 \
-        --release bookworm \
+        --release trixie \
         --domain example.com \
         --hostname server1 \
         --ip 192.168.0.110 \
