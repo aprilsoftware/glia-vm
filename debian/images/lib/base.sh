@@ -18,7 +18,11 @@ apt install python3 -y
 
 apt install sudo -y
 
-apt install ntp -y
+if [ "$OS_RELEASE" = "trixie" ]; then
+    apt-get install -y ntpsec
+else
+    apt-get install -y ntp
+fi
 
 apt install locales -y
 

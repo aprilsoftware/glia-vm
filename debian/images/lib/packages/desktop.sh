@@ -12,7 +12,11 @@ apt -y install xrdp
 
 adduser xrdp ssl-cert
 
-apt -y install policykit-1
+if [ "$OS_RELEASE" = "trixie" ]; then
+    apt -y install pkexec polkitd
+else
+    apt -y install policykit-1
+fi
 
 cat <<EOF > /etc/polkit-1/localauthority/50-local.d/color.pkla
 [Allow colord for all users]

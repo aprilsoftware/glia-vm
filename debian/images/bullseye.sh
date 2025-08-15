@@ -7,6 +7,8 @@
 #
 set -e
 
+OS_RELEASE=bullseye
+
 LIB_PATH=$(dirname -- $0)/lib
 
 source ${LIB_PATH}/args.sh

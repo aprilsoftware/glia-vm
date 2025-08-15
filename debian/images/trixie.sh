@@ -1,13 +1,13 @@
 #!/bin/bash
 #
-# Copyright (C) 2023 April Software S.A.
+# Copyright (C) 2025 April Software S.A.
 #
 # This work is licensed under the GNU GPLv3 or later.
 # See the LICENSE file in the top-level directory.
 #
 set -e
 
-OS_RELEASE=bookworm
+OS_RELEASE=trixie
 
 LIB_PATH=$(dirname -- $0)/lib
 
@@ -16,14 +16,14 @@ source ${LIB_PATH}/args.sh
 source ${LIB_PATH}/init.sh
 
 cat <<EOF > /etc/apt/sources.list
-deb http://deb.debian.org/debian/ bookworm main contrib non-free non-free-firmware
-deb-src http://deb.debian.org/debian/ bookworm main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian/ trixie main contrib non-free non-free-firmware
+deb-src http://deb.debian.org/debian/ trixie main contrib non-free non-free-firmware
 
-deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
-deb-src http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+deb http://security.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
+deb-src http://security.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
 
-deb http://deb.debian.org/debian/ bookworm-updates main contrib non-free non-free-firmware
-deb-src http://deb.debian.org/debian/ bookworm-updates main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian/ trixie-updates main contrib non-free non-free-firmware
+deb-src http://deb.debian.org/debian/ trixie-updates main contrib non-free non-free-firmware
 EOF
 
 source ${LIB_PATH}/base.sh
