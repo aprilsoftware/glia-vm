@@ -23,4 +23,9 @@ apt install grub2 -y
 
 grub-install /dev/nbd0
 
+if [ "${OS_RELEASE}" = "trixie" ]; then
+    # Prevent automatic SSH-over-VSOCK setup on systemd versions used by Trixie.
+    sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT=/ s/"$/ systemd.ssh_auto=no"/' /etc/default/grub
+fi
+
 update-grub
