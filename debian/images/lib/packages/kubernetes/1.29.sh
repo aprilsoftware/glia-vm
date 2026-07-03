@@ -22,4 +22,4 @@
 KUBERNETES_VERSION=v1.29
 PROJECT_PATH=stable:/v1.29
 
-source ${LIB_PATH}/packages/kubernetes/install.sh
+source ${LIB_PATH}/packages/kubernetes/install_1.sh
