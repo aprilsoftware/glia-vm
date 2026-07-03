@@ -30,7 +30,9 @@ deploy()
             --gateway ${VM_GATEWAY} \
             --nameserver ${VM_NAMESERVER} \
             --size ${VM_SIZE} \
-            --packages ${PACKAGES}
+            --disk-format ${DISK_FORMAT} \
+            --packages ${PACKAGES} \
+            --users="${USERS}"
 
     $1/deployvm --path ${BUILD_PATH} \
             --name ${VM_NAME} \
