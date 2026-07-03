@@ -35,7 +35,7 @@ help()
               [ -f | --disk-format ]
               [ -a | --ask-root-password ]
               [ -b | --ask-glia-password ]
-              [ -p | --packages ]
+              [ -m | --packages ]
               [ -u | --users ]
               [ -h | --help]"
     exit 2
@@ -59,8 +59,8 @@ finish()
   exit $1
 }
 
-SHORT=p:,n:,r:,d:,o:,i:,g:,l:,s:,f:,a,b,p::,u::,h
-LONG=path:,name:,release:,domain:,hostname:,ip:,gateway:,nameserver:,size:,disk-format:,ask-root-password,ask-glia-password,packages::,users::,help
+SHORT=p:,n:,r:,d:,o:,i:,g:,l:,s:,f:,abm:,u:,h
+LONG=path:,name:,release:,domain:,hostname:,ip:,gateway:,nameserver:,size:,disk-format:,ask-root-password,ask-glia-password,packages:,users:,help
 OPTS=$(getopt --alternative --name buildvm --options $SHORT --longoptions $LONG -- "$@") 
 
 if [ $# -eq 0 ]
@@ -77,7 +77,7 @@ do
       BUILD_PATH="$2"
       shift 2
       ;;
-    -d | --name )
+    -n | --name )
       VM_NAME="$2"
       shift 2
       ;;
@@ -89,7 +89,7 @@ do
       VM_DOMAIN="$2"
       shift 2
       ;;
-    -h | --hostname )
+    -o | --hostname )
       VM_HOSTNAME="$2"
       shift 2
       ;;
