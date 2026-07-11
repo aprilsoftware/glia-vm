@@ -175,6 +175,10 @@ fi
 if [ ! -z "${PACKAGES}" ]
 then
   for PACKAGE in $(echo "${PACKAGES}" | grep -o -e '[^[:space:]][^[:space:]]*'); do
+      if [[ "${PACKAGE,,}" == "none" ]]; then
+        continue
+      fi
+
       FILE="${SCRIPT_DIRECTORY}/images/lib/packages/${PACKAGE}.sh"
 
       if [ ! -f "$FILE" ]; then

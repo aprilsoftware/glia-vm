@@ -21,11 +21,11 @@
 #
 if [ ! -z "${PACKAGES}" ]
 then
-  if [[ "${PACKAGE,,}" == "none" ]]; then
-    continue
-  fi
-
   for PACKAGE in $(echo "${PACKAGES}" | grep -o -e '[^[:space:]][^[:space:]]*'); do
+      if [[ "${PACKAGE,,}" == "none" ]]; then
+        continue
+      fi
+
       source ${LIB_PATH}/packages/${PACKAGE}.sh
   done
 fi
