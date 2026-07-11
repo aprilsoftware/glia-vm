@@ -22,6 +22,10 @@
 if [ ! -z "${USERS}" ]
 then
   for USER in $(echo "${USERS}" | grep -o -e '[^[:space:]][^[:space:]]*'); do
+    if [[ "${USER,,}" == "none" ]]; then
+      continue
+    fi
+
     useradd -m -s /bin/bash "${USER}"
 
     adduser "${USER}" sudo
