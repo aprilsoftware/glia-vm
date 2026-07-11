@@ -127,7 +127,6 @@ copy_ssh_key() {
     echo "----------------------------------------"
     echo "Setting up SSH key for ${SSH_USER}@${HOST}"
 
-    # Do not copy the key again when key authentication already works.
     if ssh \
         -o BatchMode=yes \
         -o ConnectTimeout=10 \
@@ -153,7 +152,6 @@ copy_ssh_key() {
         return 1
     fi
 
-    # Verify that passwordless key authentication now works.
     if ssh \
         -o BatchMode=yes \
         -o ConnectTimeout=10 \
@@ -206,10 +204,8 @@ FAILED_HOSTS=()
 echo "Starting SSH key setup on all hosts..."
 
 for HOST in "${HOSTS[@]}"; do
-    # Remove carriage returns from Windows-formatted files.
     HOST="${HOST%$'\r'}"
 
-    # Ignore empty lines and comments.
     [[ -z "${HOST}" || "${HOST}" == \#* ]] && continue
 
     if copy_ssh_key "${HOST}"; then
