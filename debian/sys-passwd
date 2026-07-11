@@ -19,13 +19,18 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-set -e
+
+set -o pipefail
+
+SSH_USER="glia"
+SSH_KEY="${HOME}/.ssh/id_rsa.pub"
 
 help() {
-    echo "Usage: $0 [-F HOST_FILE] [HOST1 HOST2 ...]"
+    echo "Usage: $0 [-f HOST_FILE] [HOST1 HOST2 ...]"
     echo
     echo "Options:"
-    echo "  -f file    Provide a file containing a list of hosts (one per line)."
+    echo "  -f file    Provide a file containing a list of hosts."
+    echo "             The file must contain one host per line."
     echo "  -h         Display this help message."
     echo
     echo "If -f is not used, provide hosts as command-line arguments."
@@ -33,32 +38,35 @@ help() {
 }
 
 while getopts ":f:h" OPT; do
-    case ${OPT} in
-        f )
-            HOST_FILE="$OPTARG"
+    case "${OPT}" in
+        f)
+            HOST_FILE="${OPTARG}"
             ;;
-        h )
+        h)
             help
             ;;
-        \? )
-            echo "Invalid Option: -$OPTARG" >&2
+        \?)
+            echo "Invalid option: -${OPTARG}" >&2
             help
             ;;
-        : )
-            echo "Invalid Option: -$OPTARG requires an argument" >&2
+        :)
+            echo "Option -${OPTARG} requires an argument." >&2
             help
             ;;
     esac
 done
-shift $((OPTIND -1))
+
+shift $((OPTIND - 1))
 
 read_file() {
     local FILE="$1"
-    if [[ ! -f "$FILE" ]]; then
-        echo "Error: File '$FILE' does not exist." >&2
+
+    if [[ ! -f "${FILE}" ]]; then
+        echo "Error: File '${FILE}' does not exist." >&2
         exit 1
     fi
-    mapfile -t HOSTS < "$FILE"
+
+    mapfile -t HOSTS < "${FILE}"
 }
 
 read_args() {
@@ -66,78 +74,171 @@ read_args() {
         echo "Error: No hosts provided." >&2
         help
     fi
+
     HOSTS=("$@")
 }
 
-if [[ -n "$HOST_FILE" ]]; then
-    read_file "$HOST_FILE"
+if [[ -n "${HOST_FILE:-}" ]]; then
+    read_file "${HOST_FILE}"
 else
     read_args "$@"
 fi
 
 if [[ ${#HOSTS[@]} -eq 0 ]]; then
     echo "Error: Host list is empty." >&2
-    help
+    exit 1
 fi
 
-USER=glia
+if ! command -v sshpass >/dev/null 2>&1; then
+    echo "Error: sshpass is not installed." >&2
+    echo "Install it with:" >&2
+    echo "  sudo apt install sshpass" >&2
+    exit 1
+fi
 
-read -s -p "Enter new password for user '$USER': " USER_PASSWORD
+if [[ ! -f "${SSH_KEY}" ]]; then
+    echo "SSH public key not found. Generating one..."
+
+    if ! ssh-keygen \
+        -t rsa \
+        -b 4096 \
+        -N "" \
+        -f "${SSH_KEY%.pub}"
+    then
+        echo "Error: Unable to generate the SSH key." >&2
+        exit 1
+    fi
+fi
+
+read -r -s -p "Enter the current password for '${SSH_USER}': " OLD_GLIA_PASSWORD
 echo
 
-read -s -p "Enter new password for 'root': " ROOT_PASSWORD
+read -r -s -p "Enter the new password for '${SSH_USER}': " NEW_GLIA_PASSWORD
 echo
+
+read -r -s -p "Enter the new password for 'root': " ROOT_PASSWORD
+echo
+
+trap 'unset OLD_GLIA_PASSWORD NEW_GLIA_PASSWORD ROOT_PASSWORD SSHPASS' EXIT
 
 copy_ssh_key() {
     local HOST="$1"
 
     echo "----------------------------------------"
-    echo "Setting up SSH key for $HOST"
+    echo "Setting up SSH key for ${SSH_USER}@${HOST}"
 
-    if [[ ! -f ~/.ssh/id_rsa.pub ]]; then
-        echo "SSH public key not found. Generating one..."
-        ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
+    # Do not copy the key again when key authentication already works.
+    if ssh \
+        -o BatchMode=yes \
+        -o ConnectTimeout=10 \
+        -o StrictHostKeyChecking=accept-new \
+        "${SSH_USER}@${HOST}" true 2>/dev/null
+    then
+        echo "SSH key authentication already works for ${HOST}."
+        return 0
     fi
 
-    ssh-copy-id -i ~/.ssh/id_rsa.pub "${USER}@${HOST}"
-    if [[ $? -eq 0 ]]; then
-        echo "Successfully set up SSH key for $HOST."
+    if SSHPASS="${OLD_GLIA_PASSWORD}" sshpass -e ssh-copy-id \
+        -i "${SSH_KEY}" \
+        -o PubkeyAuthentication=no \
+        -o PreferredAuthentications=password,keyboard-interactive \
+        -o NumberOfPasswordPrompts=1 \
+        -o ConnectTimeout=10 \
+        -o StrictHostKeyChecking=accept-new \
+        "${SSH_USER}@${HOST}"
+    then
+        echo "Successfully installed the SSH key on ${HOST}."
+    else
+        echo "Error: Unable to install the SSH key on ${HOST}." >&2
+        return 1
+    fi
+
+    # Verify that passwordless key authentication now works.
+    if ssh \
+        -o BatchMode=yes \
+        -o ConnectTimeout=10 \
+        "${SSH_USER}@${HOST}" true
+    then
+        echo "Successfully verified SSH key authentication on ${HOST}."
         return 0
     else
-        echo "Error: Unable to copy SSH key to $HOST."
+        echo "Error: SSH key authentication failed on ${HOST}." >&2
         return 1
     fi
 }
 
 change_passwords() {
     local HOST="$1"
-    echo "----------------------------------------"
-    echo "Changing passwords on $HOST"
 
-    ssh "${USER}@${HOST}" "echo '$USER:$USER_PASSWORD' | sudo chpasswd" 2>/dev/null
-    if [[ $? -ne 0 ]]; then
-        echo "Failed to change password for user '$USER' on $HOST." >&2
-        return
+    echo "----------------------------------------"
+    echo "Changing passwords on ${HOST}"
+
+    if printf '%s:%s\n' "${SSH_USER}" "${NEW_GLIA_PASSWORD}" |
+        ssh \
+            -o BatchMode=yes \
+            -o ConnectTimeout=10 \
+            "${SSH_USER}@${HOST}" \
+            "sudo -n chpasswd"
+    then
+        echo "Successfully changed the password for '${SSH_USER}' on ${HOST}."
     else
-        echo "Successfully changed password for user '$USER' on $HOST."
+        echo "Failed to change the password for '${SSH_USER}' on ${HOST}." >&2
+        return 1
     fi
 
-    ssh "${USER}@${HOST}" "echo 'root:$ROOT_PASSWORD' | sudo chpasswd" 2>/dev/null
-    if [[ $? -ne 0 ]]; then
-        echo "Failed to change password for 'root' on $HOST." >&2
+    if printf '%s:%s\n' "root" "${ROOT_PASSWORD}" |
+        ssh \
+            -o BatchMode=yes \
+            -o ConnectTimeout=10 \
+            "${SSH_USER}@${HOST}" \
+            "sudo -n chpasswd"
+    then
+        echo "Successfully changed the password for 'root' on ${HOST}."
     else
-        echo "Successfully changed password for 'root' on $HOST."
+        echo "Failed to change the password for 'root' on ${HOST}." >&2
+        return 1
     fi
 }
 
+READY_HOSTS=()
+FAILED_HOSTS=()
+
 echo "Starting SSH key setup on all hosts..."
-for HOST in "${HOSTS[@]}"; do
-    copy_ssh_key "$HOST"
-done
 
 for HOST in "${HOSTS[@]}"; do
-    change_passwords "$HOST"
+    # Remove carriage returns from Windows-formatted files.
+    HOST="${HOST%$'\r'}"
+
+    # Ignore empty lines and comments.
+    [[ -z "${HOST}" || "${HOST}" == \#* ]] && continue
+
+    if copy_ssh_key "${HOST}"; then
+        READY_HOSTS+=("${HOST}")
+    else
+        FAILED_HOSTS+=("${HOST}")
+    fi
+done
+
+echo
+echo "Starting password changes..."
+
+for HOST in "${READY_HOSTS[@]}"; do
+    if ! change_passwords "${HOST}"; then
+        FAILED_HOSTS+=("${HOST}")
+    fi
 done
 
 echo "----------------------------------------"
-echo "Password update process completed."
+
+if [[ ${#FAILED_HOSTS[@]} -eq 0 ]]; then
+    echo "SSH key setup and password updates completed successfully."
+    exit 0
+else
+    echo "The process completed with errors on these hosts:" >&2
+
+    for HOST in "${FAILED_HOSTS[@]}"; do
+        echo "  ${HOST}" >&2
+    done
+
+    exit 1
+fi
