@@ -40,3 +40,12 @@ fi
 
 sed -i 's/^max_bpp=32/max_bpp=16/' /etc/xrdp/xrdp.ini
 sed -i 's/^#xserverbpp=24/xserverbpp=16/' /etc/xrdp/xrdp.ini
+
+if [ "$OS_RELEASE" = "trixie" ]; then
+    mkdir -p /etc/systemd/user/xdg-desktop-portal.service.d
+
+    cat > /etc/systemd/user/xdg-desktop-portal.service.d/wait-for-graphical-session.conf <<'EOF'
+    [Service]
+    ExecStartPre=/bin/sh -c 'for i in $(seq 1 100); do systemctl --user -q is-active graphical-session.target && exit 0; sleep 0.2; done; exit 0'
+    EOF
+fi
